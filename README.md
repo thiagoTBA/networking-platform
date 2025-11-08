@@ -1,3 +1,5 @@
+# networking-platform
+AG Sistemas Soluções em Software 
 # 🚀 Networking Platform
 
 Projeto desenvolvido como parte do **Teste Técnico para Desenvolvedor Fullstack**.
@@ -133,7 +135,7 @@ O projeto utiliza uma arquitetura **Fullstack integrada** com:
 
 **Thiago Brito**
 Desenvolvedor Fullstack
-📧 contato: [thiagobrito.dev@exemplo.com](mailto:thiagobrito.dev@exemplo.com)
+📧 contato: [thiago_brito@outlook.com](mailto:thiago_brito@outlook.com)
 
 ---
 
