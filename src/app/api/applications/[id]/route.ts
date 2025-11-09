@@ -1,70 +1,75 @@
+// src/app/api/applications/[id]/route.ts
+
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { randomUUID } from "crypto";
+import { sendInviteEmail } from "@/lib/emailService"; // ⬅️ Importação do serviço de e-mail
 
-// 1. CORRIGIDO: O Next.js App Router passa os 'params' da URL como segundo argumento.
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+// PATCH /api/applications/[id]
+export async function PATCH(req: Request, context: { params: { id: string } }) {
   try {
-    // 2. CORRIGIDO: Pegamos o 'id' (string) diretamente dos params.
-    const { id } = params;
+    // ✅ 1. Extrai o ID
+    const { id: idString } = await context.params;
     const { status } = await req.json();
 
-    // 3. CORRIGIDO: Validando os status em MAIÚSCULO (como o AdminPage envia).
-    if (!["APPROVED", "REJECTED"].includes(status)) {
-      return NextResponse.json(
-        { error: "Status inválido. Use 'APPROVED' ou 'REJECTED'." },
-        { status: 400 }
-      );
+    if (!idString) {
+      return NextResponse.json({ error: "ID não informado." }, { status: 400 });
     }
 
-    // Atualiza a aplicação no banco
+    if (!status || !["APPROVED", "REJECTED"].includes(status.toUpperCase())) {
+      return NextResponse.json({ error: "Status inválido." }, { status: 400 });
+    }
+
+    // ✅ 2. Converte a string da URL para um número inteiro (Int)
+    const id = parseInt(idString, 10);
+
+    if (isNaN(id)) {
+      return NextResponse.json({ error: "ID da aplicação inválido (não é um número)." }, { status: 400 });
+    }
+
+    // ✅ 3. Atualiza o status no banco (ID é Int)
     const application = await prisma.application.update({
-      // 4. CORRIGIDO: 'id' agora é uma string (CUID), o que é o correto.
       where: { id },
-      data: { status },
+      data: { status: status.toUpperCase() },
     });
 
+    // ✅ 4. Se aprovado, cria o convite e envia o e-mail
     let inviteLink = null;
-
-    // Se for aprovada, cria um convite
-    if (status === "APPROVED") {
-      const token = randomUUID();
-      // Define uma expiração (ex: 7 dias), como planejado no schema
-      const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7); // 7 dias
-
-      await prisma.invitation.create({
+    if (status.toUpperCase() === "APPROVED") {
+      const token = Math.random().toString(36).substring(2, 12);
+      
+      const invitation = await prisma.invitation.create({
         data: {
           email: application.email,
           token,
-          expires,
-          status: "PENDING",
-          // 5. CORRIGIDO: Este é o vínculo crucial que faltava.
+          expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // expira em 24h
           applicationId: application.id,
         },
       });
 
-      // Simula o envio de e-mail (como pedido no teste)
-      inviteLink = `http://localhost:3000/invite/${token}`;
-      console.log(
-        `✅ Convite criado para ${application.email}: ${inviteLink}`
-      );
+      inviteLink = `/invite/${invitation.token}`;
+      console.log("✅ Convite criado:", inviteLink);
+
+      // 🛑 NOVO: Tenta enviar o e-mail de convite
+      try {
+        await sendInviteEmail({
+          toEmail: application.email,
+          inviteLink: inviteLink,
+          userName: application.name,
+        });
+      } catch (emailError) {
+        // Loga o erro, mas permite que a requisição 200 continue, 
+        // pois a aplicação já foi aprovada no banco de dados.
+        console.warn(`⚠️ Aviso: Falha ao enviar e-mail para ${application.email}.`, emailError);
+      }
     }
 
-    // Retorna a aplicação atualizada e o link (se foi gerado)
-    return NextResponse.json({ ...application, inviteLink }, { status: 200 });
-
+    // ✅ 5. Retorna resultado
+    return NextResponse.json({
+      success: true,
+      status: application.status,
+      inviteLink,
+    });
   } catch (error) {
-    // Adiciona um log de erro mais específico se a 'application' não for encontrada
-    if (error instanceof Error && error.message.includes("Record to update not found")) {
-      return NextResponse.json(
-        { error: `Aplicação com ID não encontrada.` },
-        { status: 404 }
-      );
-    }
-
     console.error("❌ Erro ao atualizar aplicação:", error);
     return NextResponse.json(
       { error: "Erro interno ao atualizar aplicação." },

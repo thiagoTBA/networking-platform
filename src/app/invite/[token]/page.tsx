@@ -3,23 +3,28 @@
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+// Componente principal para a página de convite
 export default function InvitePage({ params }: { params: Promise<{ token: string }> }) {
-  const { token } = use(params); // ✅ Desembrulha a Promise (Next 16+)
+  // Desembrulha a Promise do token da URL
+  const { token } = use(params); 
+  
+  // Estados para dados pré-preenchidos e formulário
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [company, setCompany] = useState("");
   
-  // 1. ADICIONADO: Estados para senha
+  // Estados para senhas
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  // Estados de UI
   const [valid, setValid] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const router = useRouter();
 
-  // ✅ Valida o convite
+  // ✅ Validação do convite (GET /api/invite/[token])
   useEffect(() => {
     async function validateInvite() {
       try {
@@ -29,7 +34,10 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
         if (!res.ok || !data.valid) {
           setError(data.error || "Convite inválido ou expirado.");
         } else {
-          setEmail(data.email); // Preenche o e-mail
+          // Pré-preenche Name e Company com dados da Application retornados pela API
+          setEmail(data.email); 
+          setName(data.name || ""); 
+          setCompany(data.company || "");
           setValid(true);
         }
       } catch {
@@ -42,24 +50,28 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
     if (token) validateInvite();
   }, [token]);
 
-  // ✅ Envia os dados de registro
+  // ✅ Envia os dados de registro (POST /api/invite/[token])
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setSuccess(false);
 
-    // 2. ADICIONADO: Validação local de senha
+    // Validação local de senhas
     if (password !== confirmPassword) {
       setError("As senhas não conferem.");
       return;
+    }
+    if (!name.trim()) {
+        setError("O campo Nome Completo é obrigatório.");
+        return;
     }
 
     try {
       const res = await fetch(`/api/invite/${token}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // 3. ADICIONADO: Enviando todos os dados do novo usuário
-        body: JSON.stringify({ name, company, password }),
+        // Enviando Name, Company, e Password
+        body: JSON.stringify({ name, company, password }), 
       });
 
       const data = await res.json();
@@ -70,11 +82,16 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
       }
 
       setSuccess(true);
-      setTimeout(() => router.push("/login"), 3000);
+      // Redireciona para a página de login após o sucesso
+      setTimeout(() => router.push("/login"), 3000); 
     } catch {
       setError("Erro interno ao enviar o formulário.");
     }
   }
+
+  // ------------------------------------
+  // Renderização
+  // ------------------------------------
 
   // 🕓 Estado de carregamento
   if (loading)
@@ -84,8 +101,8 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
       </div>
     );
 
-  // ❌ Convite inválido ou erro
-  if (error && !valid) // Só mostra tela de erro fatal se o convite for inválido
+  // ❌ Convite inválido ou erro fatal
+  if (error && !valid)
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-red-50 text-red-600 text-lg font-semibold p-6">
         <p>❌ {error}</p>
@@ -106,7 +123,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
       </div>
     );
 
-  // 🧾 Formulário
+  // 🧾 Formulário Principal
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
       <form
@@ -121,14 +138,13 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
           Convite para o e-mail: <b>{email}</b>
         </p>
 
-        {/* 4. ADICIONADO: Exibindo erros locais (ex: senhas não conferem) */}
+        {/* Exibindo erros */}
         {error && (
             <p className="text-center text-red-600 mb-4 text-sm">{error}</p>
         )}
 
         <div className="space-y-4">
           <div>
-            {/* 5. ALTERADO: Acessibilidade (htmlFor/id) */}
             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
               Nome Completo
             </label>
@@ -143,7 +159,6 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
           </div>
 
           <div>
-            {/* 6. ALTERADO: Acessibilidade (htmlFor/id) */}
             <label htmlFor="company" className="block text-sm font-medium text-gray-700">
               Empresa
             </label>
@@ -157,7 +172,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
             />
           </div>
 
-          {/* 7. ADICIONADO: Campo Senha */}
+          {/* Campo Senha */}
           <div>
             <label 
               htmlFor="password" 
@@ -175,7 +190,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
             />
           </div>
 
-          {/* 8. ADICIONADO: Campo Confirmar Senha */}
+          {/* Campo Confirmar Senha */}
           <div>
             <label
               htmlFor="confirmPassword"
@@ -196,7 +211,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
 
         <button
           type="submit"
-          disabled={!name || !password || !confirmPassword}
+          disabled={!name || !password || !confirmPassword || password !== confirmPassword}
           className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed mt-6"
         >
           Confirmar Cadastro

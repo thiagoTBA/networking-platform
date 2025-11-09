@@ -8,43 +8,64 @@ datasource db {
 }
 
 model Application {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  company   String?
-  status    String   @default("pending")
-  createdAt DateTime @default(now())
+  id         Int          @id @default(autoincrement())
+  name       String
+  email      String
+  company    String?
+  reason     String?
+  status     String       @default("pending")
+  createdAt  DateTime     @default(now())
+
+  // Relação inversa para Invitation
+  invitations Invitation[]
 }
 
 model Invitation {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  token     String   @unique
-  used      Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id           Int          @id @default(autoincrement())
+  email        String
+  token        String       @unique
+  used         Boolean      @default(false)
+  expires      DateTime     @default(now())
+  createdAt    DateTime     @default(now())
+
+  // Relação com Application
+  applicationId Int          @default(1)
+  application   Application  @relation(fields: [applicationId], references: [id])
 }
 
-
 model Member {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  company   String?
-  joinedAt  DateTime @default(now())
+  id         Int         @id @default(autoincrement())
+  name       String
+  email      String      @unique
+  company    String?
+  joinedAt   DateTime    @default(now())
+  password   String
 
-  // 👇 Adiciona os dois lados da relação
   ReferralsSent     Referral[] @relation("ReferralsSent")
   ReferralsReceived Referral[] @relation("ReferralsReceived")
+
+  // 👇 Novo: relação inversa com avisos criados
+  notices   Notice[]           @relation("MemberNotices")
 }
 
 model Referral {
-  id            Int      @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
   fromMemberId  Int
   toMemberId    Int
   description   String?
-  status        String   @default("pending")
-  createdAt     DateTime @default(now())
+  status        String    @default("pending")
+  createdAt     DateTime  @default(now())
 
   fromMember Member @relation("ReferralsSent", fields: [fromMemberId], references: [id])
   toMember   Member @relation("ReferralsReceived", fields: [toMemberId], references: [id])
 }
+
+model Notice {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  authorId  Int
+  author    Member   @relation("MemberNotices", fields: [authorId], references: [id])
+}
+

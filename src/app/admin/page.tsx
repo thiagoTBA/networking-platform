@@ -4,13 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 interface Application {
-  // 1. CORRIGIDO: O ID do Prisma (CUID) é uma string, não um número.
   id: string;
   name: string;
   email: string;
   company: string | null;
-  // 2. ADICIONADO: O campo 'reason' que vem da API
-  reason: string | null; 
+  reason: string | null;
   status: string;
   createdAt: string;
 }
@@ -22,13 +20,13 @@ export default function AdminPage() {
   const [message, setMessage] = useState("");
   const router = useRouter();
 
-  // ✅ Logout: remove cookie e redireciona
+  // ✅ Logout
   async function handleLogout() {
     document.cookie = "auth_token=; Max-Age=0; path=/; SameSite=Lax;";
     router.push("/login");
   }
 
-  // ✅ Busca as aplicações no servidor
+  // ✅ Busca as aplicações
   useEffect(() => {
     const fetchApplications = async () => {
       setLoading(true);
@@ -50,38 +48,36 @@ export default function AdminPage() {
     fetchApplications();
   }, [refresh]);
 
-  // ✅ Atualiza status da aplicação (aprovar/rejeitar)
-  // 3. CORRIGIDO: O 'id' recebido é uma string.
+  // ✅ Atualiza status (aprovar/rejeitar)
   const handleAction = async (id: string, status: "APPROVED" | "REJECTED") => {
     setMessage("");
 
     try {
-      // O endpoint aqui está correto, mas vamos precisar ver o
-      // arquivo [id]/route.ts que lida com o PATCH.
       const res = await fetch(`/api/applications/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
 
-      if (!res.ok) throw new Error();
+      if (!res.ok) throw new Error("Erro ao atualizar status.");
 
       const data = await res.json();
 
-      // O 'console.log' simula o envio do e-mail/link
+      // Se o backend retornar um link de convite
       if (status === "APPROVED" && data.inviteLink) {
-        console.log("CONVITE GERADO (Simulando envio):", data.inviteLink);
-        setMessage("✅ Aplicação aprovada! Link de convite gerado no console.");
-      } else {
-        setMessage("❌ Aplicação rejeitada.");
+        console.log("🎟️ CONVITE GERADO:", data.inviteLink);
+        setMessage("✅ Aplicação aprovada! Link de convite exibido no console.");
+      } else if (status === "REJECTED") {
+        setMessage("🚫 Aplicação rejeitada.");
       }
 
-      // 🔹 Mensagem desaparece após 3 segundos
-      setTimeout(() => setMessage(""), 3000);
-
-      // Atualiza a lista
-      setRefresh((prev) => !prev);
-    } catch {
+      // Atualiza lista após 2s
+      setTimeout(() => {
+        setMessage("");
+        setRefresh((prev) => !prev);
+      }, 2000);
+    } catch (error) {
+      console.error(error);
       setMessage("⚠️ Erro ao atualizar status da aplicação.");
       setTimeout(() => setMessage(""), 3000);
     }
@@ -89,7 +85,7 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 relative">
-      {/* 🔹 Topo do painel */}
+      {/* 🔹 Cabeçalho */}
       <header className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">
           Painel Administrativo
@@ -102,14 +98,14 @@ export default function AdminPage() {
         </button>
       </header>
 
-      {/* 🔹 Mensagem de feedback */}
+      {/* 🔹 Mensagens */}
       {message && (
         <div className="mb-4 p-3 rounded-md bg-blue-100 text-blue-800 text-sm shadow-sm">
           {message}
         </div>
       )}
 
-      {/* 🔹 Conteúdo principal */}
+      {/* 🔹 Lista de aplicações */}
       {loading ? (
         <p>Carregando solicitações...</p>
       ) : applications.length === 0 ? (
@@ -130,9 +126,9 @@ export default function AdminPage() {
                   </p>
                   <p
                     className={`text-xs mt-1 font-medium ${
-                      app.status === "PENDING"
+                      app.status.toLowerCase() === "pending"
                         ? "text-yellow-600"
-                        : app.status === "APPROVED"
+                        : app.status.toLowerCase() === "approved"
                         ? "text-green-600"
                         : "text-red-600"
                     }`}
@@ -140,8 +136,9 @@ export default function AdminPage() {
                     Status: {app.status}
                   </p>
                 </div>
-                {/* 4. ADICIONADO: Botões de ação (apenas se pendente) */}
-                {app.status === "PENDING" && (
+
+                {/* ✅ Corrigido: Agora checa status em minúsculo também */}
+                {app.status.toLowerCase() === "pending" && (
                   <div className="space-x-2 flex-shrink-0">
                     <button
                       onClick={() => handleAction(app.id, "APPROVED")}
@@ -159,14 +156,14 @@ export default function AdminPage() {
                 )}
               </div>
 
-              {/* 5. ADICIONADO: Exibição do "motivo" */}
+              {/* Motivo */}
               {app.reason && (
                 <div className="mt-4 pt-3 border-t border-gray-100">
                   <p className="text-sm font-semibold text-gray-700">
                     Motivo para participar:
                   </p>
                   <p className="text-sm text-gray-600 italic">
-                    "{app.reason}"
+                    “{app.reason}”
                   </p>
                 </div>
               )}
