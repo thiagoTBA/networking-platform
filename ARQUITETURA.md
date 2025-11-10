@@ -3,22 +3,21 @@
 ## 🧩 Visão Geral
 
 A aplicação **Networking Platform** foi desenvolvida com **Next.js 16 (App Router)**, adotando uma arquitetura **Fullstack Unificada**.  
-O frontend, backend e camada de domínio coexistem no mesmo repositório, com renderização SSR, API Routes, autenticação JWT + cookies e controle via Proxy Middleware.
+O frontend, backend e a camada de domínio coexistem no mesmo repositório, garantindo integração direta entre interface e API.  
+Toda a autenticação é feita via **JWT + Cookies HTTP-only**, protegida por **middleware global**.
 
-O objetivo principal é gerenciar todo o ciclo de vida de um membro da rede:
+O objetivo principal é gerenciar o ciclo de vida de um membro da rede:
 
-1. Envio de solicitação de adesão via formulário público;
-2. Avaliação e aprovação pelo painel administrativo;
-3. Geração de convites únicos com tokens;
-4. Validação de tokens e cadastro final do novo membro;
-5. Controle de autenticação via cookies HTTP-only;
+1. Envio de solicitação via formulário público;  
+2. Avaliação e aprovação pelo painel administrativo;  
+3. Geração e envio de convites únicos com tokens;  
+4. Validação de tokens e cadastro final do novo membro;  
+5. Controle de autenticação via cookies HTTP-only;  
 6. Administração de mensalidades, reuniões e comunicados internos.
 
 ---
 
 ## 🧱 Diagrama da Arquitetura
-
-O diagrama a seguir ilustra a interação entre o **frontend**, **middleware**, **API backend**, **serviços internos** e **banco de dados**.
 
 ```mermaid
 flowchart TD
@@ -32,13 +31,13 @@ flowchart TD
     subgraph "Next.js (App Router)"
         direction TB
         M[Middleware / Proxy]
-        API1[/api/login/]
+        API1[/api/auth/login/]
         API2[/api/applications/]
         API3[/api/invitations/]
         API4[/api/finance/]
     end
 
-    subgraph "Serviços (Domínio)"
+    subgraph "Serviços Internos"
         S1[Auth Service - JWT + Cookies]
         S2[Mailer Service - Nodemailer]
         S3[Prisma ORM - Banco]
@@ -70,19 +69,17 @@ flowchart TD
 | Camada | Tecnologia | Justificativa |
 |--------|-------------|----------------|
 | **Frontend / SSR** | Next.js 16 (App Router + Edge Runtime) | Framework moderno, rápido e unificado com API Routes. |
-| **Backend API** | Next.js API Routes | Facilita deploy e integração, elimina necessidade de servidor separado. |
-| **Banco de Dados** | SQLite (via Prisma ORM) | Leve, prático e ideal para protótipos; migração futura para PostgreSQL simples. |
-| **Autenticação** | Cookies HTTP-only + JWT + Proxy | Seguro e compatível com Edge Runtime. |
-| **Estilização** | TailwindCSS 4 | Design rápido e consistente. |
-| **E-mails** | Nodemailer | Envio de convites e notificações. |
-| **Relatórios e Gráficos** | JSPDF + FileSaver + Recharts | Geração de PDFs e dashboards visuais. |
-| **Testes** | Jest + Testing Library | Cobertura completa de backend e frontend. |
+| **Backend API** | Next.js API Routes | Integração nativa e deploy simplificado (serverless). |
+| **Banco de Dados** | SQLite (via Prisma ORM) | Leve, ideal para protótipos e testes técnicos; fácil migração para PostgreSQL. |
+| **Autenticação** | JWT + Cookies HTTP-only + Middleware | Seguro, eficiente e compatível com Edge Runtime. |
+| **Estilização** | TailwindCSS 4 | Estilo moderno e responsivo com produtividade. |
+| **E-mails** | Nodemailer | Envio automatizado de convites e notificações. |
+| **Relatórios** | JSPDF / FileSaver / Recharts | PDFs e gráficos interativos. |
+| **Testes** | Jest + Testing Library | Cobertura unificada de frontend e backend. |
 
 ---
 
 ## 🧬 Modelo de Dados (Prisma)
-
-O banco foi expandido para suportar finanças, reuniões e avisos.
 
 ```prisma
 model Application {
@@ -146,141 +143,100 @@ model Notice {
 
 ---
 
-## 📂 Estrutura de Componentes (Frontend)
-
-Organização de rotas e componentes:
+## 📂 Estrutura de Componentes
 
 ```
 src/
  ├── app/
- │   ├── (public)/ → Rotas públicas (/apply, /login)
- │   ├── (private)/ → Rotas privadas (/admin, /dashboard)
- │   ├── api/ → Backend integrado
- │   └── layout.tsx / globals.css → Layouts e estilos globais
+ │   ├── (public)/ → /apply, /login
+ │   ├── (private)/ → /admin, /dashboard
+ │   ├── api/ → Rotas integradas do backend
+ │   └── layout.tsx / globals.css → Layout global
  ├── components/
  │   ├── ui/ → Botões, Inputs, Cards, Badges
- │   └── features/ → Componentes lógicos (ApplicationForm, AdminInviteTable)
+ │   └── features/ → ApplicationForm, AdminInviteTable
  ├── lib/ → Prisma, Auth, Mailer, Finance
- ├── scripts/ → Automação (Seed, Geração de Mensalidades)
- └── prisma/ → Schema, Migrações, Seeds
+ ├── scripts/ → Seeds e automações
+ └── prisma/ → Schema e migrações
 ```
 
 ---
 
-## 🔌 Definição da API
+## 🔌 Endpoints Principais
 
-Principais endpoints REST internos:
-
-### 1️⃣ Criar Solicitação de Adesão
-`POST /api/applications`
-
-```json
-{
-  "name": "string",
-  "email": "string",
-  "company": "string",
-  "reason": "string"
-}
-```
-
-Retorno:
-```json
-{
-  "id": "cuid-123",
-  "status": "PENDING"
-}
-```
-
----
-
-### 2️⃣ Gerar Convite
-`POST /api/invitations`
-
-```json
-{
-  "applicationId": "cuid-abc123"
-}
-```
-
-Retorno:
-```json
-{
-  "token": "unique-secure-token",
-  "generatedInviteLink": "/invite/unique-secure-token"
-}
-```
-
----
-
-### 3️⃣ Controle Financeiro
-`GET /api/finance`
-
-Retorna histórico de pagamentos e status.
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `POST` | `/api/applications` | Cria uma nova solicitação |
+| `PATCH` | `/api/applications/:id` | Aprova ou rejeita uma solicitação |
+| `POST` | `/api/invitations` | Gera e envia convite |
+| `POST` | `/api/auth/login` | Realiza login e cria cookie JWT |
+| `GET` | `/api/finance` | Lista pagamentos e relatórios |
 
 ---
 
 ## 🔒 Fluxo de Autenticação
 
-1. Usuário faz login (`POST /api/login`);
-2. API valida credenciais e cria cookie `auth_token` com flags `httpOnly`, `secure`, `path=/`;
-3. O **proxy.ts** intercepta todas as requisições:
-   - Se não autenticado → redireciona para `/login`;
-   - Se autenticado → libera acesso a `/admin`;
-4. Sessões são verificadas e expiradas via JWT.
+1. Usuário faz login → `POST /api/auth/login`;  
+2. API valida e gera cookie `auth_token` com flags `httpOnly` e `secure`;  
+3. Middleware (`middleware.ts`) intercepta todas as rotas:  
+   - Não autenticado → redireciona `/login`;  
+   - Autenticado → libera `/admin`;  
+4. Sessões expiram automaticamente via JWT.
 
 ---
 
 ## 💰 Fluxo Financeiro
 
-1. Script `generateMonthlyPayments.ts` cria mensalidades automaticamente;
-2. Admin visualiza relatórios via dashboard (Recharts);
-3. Usuário pode exportar relatórios em **PDF**;
-4. Todos os registros persistem via `Prisma` no SQLite.
+1. Script `generateMonthlyPayments.ts` cria mensalidades automáticas;  
+2. Admin visualiza relatórios e status em `/admin/finance`;  
+3. Exportação em **PDF** e visualização com **Recharts**;  
+4. Persistência garantida via **Prisma ORM + SQLite**.
 
 ---
 
 ## 🧪 Testes
 
-- **proxy.test.ts** → Rotas protegidas  
-- **login.test.ts** → Autenticação e cookies  
-- **ApplyPage.test.tsx** → Formulário de adesão  
-- **memberModel.test.ts** → ORM  
-- **sanity.test.ts** → Ambiente  
+Rodar testes unitários e cobertura:
 
-Execução:
 ```bash
 npm run test
 npm run test:coverage
 ```
 
+Inclui:
+- Autenticação JWT e cookies  
+- Proteção de rotas  
+- Modelos Prisma  
+- Páginas públicas e privadas  
+
 ---
 
 ## 🧠 Decisões Técnicas
 
-- **Fullstack Unificado** → Integração direta entre UI e API.
-- **Proxy.ts ao invés de Middleware** → Compatível com Edge Runtime no Next 16.
-- **Prisma ORM** → Abstração robusta de banco e migração futura simples.
-- **TailwindCSS + React 19** → Produtividade e performance.
-- **Nodemailer** → Convites e notificações automatizadas.
-- **Recharts / JSPDF** → Visualização e relatórios financeiros modernos.
+- **Next.js Fullstack** → Um único ambiente para UI e API.  
+- **Prisma ORM** → Modelo relacional seguro e tipado.  
+- **JWT + Cookies HTTP-only** → Autenticação segura.  
+- **Tailwind + React 19** → Performance e estilo moderno.  
+- **Serverless Deploy (Vercel)** → Simplicidade e escalabilidade.  
+- **Arquitetura Modular** → Cada módulo (finance, meetings etc.) é independente.
 
 ---
 
-## 🧰 Scripts de Automação
+## 🧰 Scripts
 
-| Script | Função |
-|---------|--------|
-| `scripts/seedMembers.ts` | Popular base com membros de teste |
-| `scripts/generateMonthlyPayments.ts` | Gerar mensalidades automaticamente |
-| `prisma/seed.ts` | Criar dados iniciais |
-| `npm run test:coverage` | Gerar cobertura de testes |
+| Script | Descrição |
+|---------|------------|
+| `scripts/seed.ts` | Cria dados iniciais |
+| `scripts/seedMembers.ts` | Gera membros fictícios |
+| `scripts/generateMonthlyPayments.ts` | Cria mensalidades automáticas |
+| `npm run test:coverage` | Gera relatório de testes |
 
 ---
 
 ## ✅ Conclusão
 
-A **Networking Platform** é uma aplicação **modular, segura e escalável**, que cobre desde o fluxo de adesão até o gerenciamento financeiro e administrativo.  
-A arquitetura favorece reuso, performance e deploy simplificado em ambientes serverless.
+A **Networking Platform** é uma aplicação **modular, escalável e segura**, cobrindo todo o ciclo de adesão e administração de membros.  
+O uso do **Next.js 16 com Prisma e JWT** garante uma arquitetura moderna, fácil de manter e ideal para ambientes de produção serverless.
 
 ---
 

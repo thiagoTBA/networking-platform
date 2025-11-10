@@ -1,8 +1,8 @@
 # 🚀 Networking Platform  
 **AG Sistemas - Soluções em Software**
 
-Plataforma profissional para **gestão de rede de membros**, permitindo solicitações, aprovações, convites, controle financeiro, reuniões e avisos internos.  
-Desenvolvido como parte de um **teste técnico fullstack** com foco em arquitetura moderna e escalabilidade.
+Plataforma completa para **gestão de rede de membros corporativos**, com fluxo de solicitações, aprovações, convites, controle financeiro, reuniões, avisos e relatórios interativos.  
+Desenvolvido como parte de um **teste técnico fullstack**, com foco em arquitetura escalável, boas práticas e experiência administrativa moderna.
 
 ---
 
@@ -10,10 +10,10 @@ Desenvolvido como parte de um **teste técnico fullstack** com foco em arquitetu
 
 | Camada | Tecnologias |
 |--------|--------------|
-| **Frontend** | Next.js 16 (App Router + Edge Runtime), React 19, TailwindCSS 4 |
+| **Frontend** | Next.js 16 (App Router), React 19, TailwindCSS 4 |
 | **Backend** | Node.js 22, Prisma ORM, SQLite |
-| **Autenticação** | Cookies HTTP + JWT + Middleware Proxy |
-| **Outros** | Nodemailer (e-mails), Bcrypt (hash), JSPDF / FileSaver (relatórios PDF), Recharts (gráficos) |
+| **Autenticação** | Cookies HTTP + JWT + Middleware de proteção |
+| **Outros** | Nodemailer, Bcrypt, JSPDF / FileSaver, Recharts |
 | **Testes** | Jest + Testing Library |
 | **Linguagem** | TypeScript 5.9 |
 
@@ -24,7 +24,7 @@ Desenvolvido como parte de um **teste técnico fullstack** com foco em arquitetu
 ### 1️⃣ Clonar o repositório
 
 ```bash
-git clone https://github.com/thiagotba/networking-platform.git
+git clone https://github.com/thiagoTBA/networking-platform.git
 cd networking-platform
 ```
 
@@ -40,7 +40,7 @@ npm install
 npx prisma generate
 ```
 
-### 4️⃣ Rodar em modo de desenvolvimento
+### 4️⃣ Executar em modo desenvolvimento
 
 ```bash
 npm run dev
@@ -51,42 +51,41 @@ Acesse em:
 
 ---
 
-## 🧱 Estrutura de Pastas
+## 🗂️ Estrutura do Projeto
 
 ```
 src/
  ├── app/
- │   ├── api/
- │   │   ├── applications/        → Gerenciamento de solicitações
- │   │   ├── invitations/         → Criação e envio de convites
- │   │   ├── invite/[token]/      → Validação de token de convite
- │   │   ├── login/               → Autenticação e cookies
- │   │   └── finance/             → API de controle financeiro
- │   ├── admin/
- │   │   ├── applications/        → Painel de solicitações
- │   │   ├── finance/             → Gestão de pagamentos e mensalidades
- │   │   ├── meetings/            → Agenda e atas de reuniões
- │   │   ├── notices/             → Avisos e comunicados internos
- │   │   ├── referrals/           → Indicações e networking
- │   │   └── dashboard/           → Painel de estatísticas (Recharts)
- │   ├── apply/                   → Formulário de adesão
- │   ├── invite/[token]/          → Página de convite
- │   └── login/                   → Tela de login
+ │   ├── api/                      → Rotas da API (Next.js)
+ │   │   ├── applications/         → CRUD de solicitações
+ │   │   ├── invitations/          → Criação de convites
+ │   │   ├── invite/[token]/       → Validação de convite
+ │   │   ├── auth/login/           → Autenticação via JWT
+ │   │   └── finance/              → API financeira
+ │   ├── admin/                    → Painel administrativo
+ │   │   ├── dashboard/            → Visão geral (gráficos e KPIs)
+ │   │   ├── applications/         → Solicitações
+ │   │   ├── finance/              → Controle financeiro
+ │   │   ├── meetings/             → Reuniões
+ │   │   ├── notices/              → Avisos internos
+ │   │   ├── referrals/            → Indicações
+ │   │   └── reports/              → Relatórios (PDFs)
+ │   ├── login/                    → Tela de login
+ │   └── apply/                    → Formulário de solicitação
  ├── lib/
- │   ├── prisma.ts                → Configuração ORM
- │   ├── mailer.ts                → Serviço de e-mail (Nodemailer)
- │   └── auth.ts                  → Validação JWT e sessão
- ├── middleware.ts                → Proxy e proteção de rotas
+ │   ├── prisma.ts                 → Configuração ORM
+ │   ├── mailer.ts                 → Serviço de envio de e-mails
+ │   └── auth.ts                   → Geração e validação de tokens JWT
+ ├── middleware.ts                 → Proteção global de rotas autenticadas
  ├── scripts/
- │   ├── seedMembers.ts           → Geração de membros fake
- │   └── generateMonthlyPayments.ts → Geração de mensalidades automáticas
+ │   ├── seed.ts                   → Popular o banco inicial
+ │   └── generateMonthlyPayments.ts → Geração automática de mensalidades
  ├── prisma/
- │   ├── schema.prisma            → Modelagem de banco
- │   ├── migrations/              → Histórico de migrações
- │   └── seed.ts                  → Popular dados iniciais
- ├── __tests__/                   → Testes unitários
- ├── public/                      → Assets e ícones
- └── globals.css                  → Estilos globais
+ │   ├── schema.prisma             → Modelagem do banco
+ │   └── migrations/               → Histórico de versões
+ ├── public/                       → Ícones e assets
+ ├── __tests__/                    → Testes unitários
+ └── globals.css                   → Estilos globais (Tailwind)
 ```
 
 ---
@@ -96,41 +95,76 @@ src/
 | Módulo | Descrição |
 |--------|------------|
 | **/apply** | Solicitação de entrada na rede |
-| **/admin/applications** | Aprovação e rejeição de pedidos |
-| **/admin/finance** | Controle financeiro, geração de boletos e PDFs |
-| **/admin/meetings** | Gerenciamento de reuniões e atas |
-| **/admin/notices** | Avisos internos para membros |
+| **/admin/applications** | Aprovação, rejeição e listagem de pedidos |
+| **/admin/finance** | Controle de pagamentos, PDFs e relatórios |
+| **/admin/meetings** | Gestão de reuniões e atas |
+| **/admin/notices** | Publicação de avisos para membros |
 | **/admin/referrals** | Sistema de indicação de novos membros |
-| **/api/login** | Login e sessão (cookies + JWT) |
-| **/api/invite/[token]** | Validação de convites |
+| **/api/auth/login** | Login JWT com cookies HTTPOnly |
+| **/api/invite/[token]** | Validação de convites personalizados |
 | **/scripts/generateMonthlyPayments** | Automatização de mensalidades |
-| **/proxy.ts / middleware.ts** | Proteção de rotas autenticadas |
+| **/middleware.ts** | Proteção global de rotas autenticadas |
 
 ---
 
 ## 🌍 Variáveis de Ambiente
 
-Crie um arquivo `.env` com base em `.env.example`:
+Crie um arquivo `.env` com o seguinte conteúdo:
 
 ```env
-DATABASE_URL="file:./dev.db"
-JWT_SECRET="seu_token_seguro"
-EMAIL_USER="seu_email@provedor.com"
-EMAIL_PASS="sua_senha"
+DATABASE_URL="file:./prisma/dev.db"
+JWT_SECRET="meu_token_super_seguro_123"
+EMAIL_HOST="sandbox.smtp.mailtrap.io"
+EMAIL_PORT=587
+EMAIL_USER="seu_user_aqui"
+EMAIL_PASS="sua_senha_aqui"
+BASE_URL="http://localhost:3000"
 NODE_ENV="development"
 ```
 
-Gerar banco e rodar migrações:
+Gerar e popular o banco:
 
 ```bash
 npx prisma migrate dev --name init
+npx prisma db seed
 ```
 
 ---
 
-## 🧪 Testes
+## 💰 Módulo Financeiro
 
-O projeto utiliza **Jest** + **Testing Library**.
+- Geração automática de **mensalidades** por script (`scripts/generateMonthlyPayments.ts`)  
+- Relatórios em **PDF** com `jspdf` + `file-saver`  
+- Gráficos com **Recharts**  
+- Indicadores de status (**Pago / Pendente / Vencido**)  
+
+---
+
+## 🧱 Arquitetura do Sistema
+
+A aplicação segue um modelo **Fullstack unificado (Next.js App Router)**:
+
+```
+Frontend (React + Tailwind)
+        ↓
+App Router (Next.js 16)
+        ↓
+API Routes (/api/*)
+        ↓
+Prisma ORM → SQLite
+        ↓
+Serviços auxiliares (Mailer, Auth, Reports)
+```
+
+- **Autenticação**: JWT com cookie HTTPOnly  
+- **Proteção de rotas**: Middleware global  
+- **Banco**: SQLite local via Prisma  
+- **Arquitetura modular**: Cada módulo (`finance`, `meetings`, `notices` etc.) é independente e escalável  
+- **Deploy**: Vercel com Edge Runtime  
+
+---
+
+## ✅ Testes
 
 Rodar testes unitários:
 
@@ -144,31 +178,18 @@ Gerar relatório de cobertura:
 npm run test:coverage
 ```
 
-📦 Testes existentes:
-- `proxy.test.ts` → Proteção de rotas  
-- `login.test.ts` → Autenticação e cookies  
-- `memberModel.test.ts` → Validação ORM  
-- `ApplyPage.test.tsx` → Formulário de adesão  
-- `sanity.test.ts` → Sanidade e ambiente  
+Inclui:
+- Autenticação e cookies  
+- Proteção de rotas  
+- Models Prisma  
+- Páginas e formulários  
 
 ---
 
-## 📊 Módulo Financeiro 
+## ☁️ Deploy
 
-- Geração automática de **mensalidades** com script agendável.  
-- Relatórios em **PDF** (via `jspdf` e `file-saver`).  
-- Dashboard com **gráficos interativos** (`Recharts`).  
-- Histórico de pagamentos vinculado a cada membro.
-
----
-
-## 🏗️ Arquitetura Geral
-
-O projeto segue uma arquitetura **Fullstack unificada**, com:
-- Frontend e Backend integrados via App Router.
-- Middleware centralizado controlando autenticação JWT e cookies.
-- Serviços isolados (Mailer, Prisma, Auth, Finance).
-- Scripts de automação (semente, relatórios e mensalidades).
+Aplicação hospedada na **Vercel**:  
+🔗 [https://networking-platform.vercel.app](https://networking-platform.vercel.app)
 
 ---
 
@@ -180,11 +201,21 @@ Desenvolvedor Fullstack
 
 ---
 
-## ✅ Status do Projeto
+## 🟩 Status do Projeto
 
-🟩 **100% Concluído e atualizado**  
-🧪 Testes: todos passando  
-📦 Build: validada  
-🔒 Segurança e autenticação revisadas  
-💰 Módulo financeiro implementado  
-📈 Painel administrativo completo  
+| Item | Status |
+|------|---------|
+| Build | ✅ Concluído |
+| Deploy | ✅ Online |
+| Testes | ✅ Passando |
+| Layout Admin | ✅ Sidebar funcional |
+| Autenticação | ✅ JWT + Cookie HTTPOnly |
+| Banco | ✅ SQLite (Prisma) |
+| API | ✅ Modular e protegida |
+
+---
+
+### 🎯 Resultado Final
+
+Painel administrativo completo, estável, moderno e **deployado na Vercel** com **autenticação JWT**, **middleware global** e **módulo financeiro interativo**.  
+Pronto para **entrega profissional** 💼
