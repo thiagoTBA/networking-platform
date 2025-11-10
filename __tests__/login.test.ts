@@ -23,13 +23,19 @@ describe("Login API", () => {
   test("deve criar cookie de autenticação no login", async () => {
     const res = await POST(); // Chama o handler direto
     expect(NextResponse.json).toHaveBeenCalledWith({ success: true });
-    expect(res.cookies.set).toHaveBeenCalledWith("auth_token", "fake_admin_token", {
-  httpOnly: true,
-  secure: false,
-  sameSite: "lax",
-  path: "/",
-  maxAge: 14400,
-    });
+
+    // ✅ Aceita qualquer JWT válido (padrão base64 "eyJ...")
+    expect(res.cookies.set).toHaveBeenCalledWith(
+      "auth_token",
+      expect.stringMatching(/^eyJ/),
+      {
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 14400,
+      }
+    );
   });
 
   test("deve deletar cookie no logout", async () => {

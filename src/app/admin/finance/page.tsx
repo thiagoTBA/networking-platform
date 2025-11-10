@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-// ✅ Removi next/dynamic. Import direto do Recharts + renderização só após montar no cliente
+import Link from "next/link"; // 🆕 Navegação entre páginas
 import {
   ResponsiveContainer,
   PieChart,
@@ -35,10 +35,7 @@ export default function FinancePage() {
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
-  // ✅ Evita SSR para Recharts (só renderiza após montar no cliente)
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     fetch("/api/payments")
@@ -67,36 +64,23 @@ export default function FinancePage() {
     return { totalPaid, totalPending, totalOverdue, countPaid, countPending, countOverdue };
   }, [payments]);
 
-  const monthlyData = useMemo(() => {
-    const map = new Map<string, { monthLabel: string; paid: number; pending: number; overdue: number }>();
-    for (const p of payments) {
-      const mm = String(p.month).padStart(2, "0");
-      const key = `${p.year}-${mm}`;
-      const label = `${mm}/${p.year}`;
-      if (!map.has(key)) map.set(key, { monthLabel: label, paid: 0, pending: 0, overdue: 0 });
-      const bucket = map.get(key)!;
-      if (p.status === "PAID") bucket.paid += p.amount;
-      else if (p.status === "PENDING") bucket.pending += p.amount;
-      else bucket.overdue += p.amount;
-    }
-    return Array.from(map.entries())
-      .sort(([a], [b]) => (a < b ? -1 : 1))
-      .map(([_, v]) => v);
-  }, [payments]);
-
   const pieData = useMemo(() => ([
     { name: `Pago (${countPaid})`, value: totalPaid, color: "#16a34a" },
     { name: `Pendente (${countPending})`, value: totalPending, color: "#facc15" },
     { name: `Vencido (${countOverdue})`, value: totalOverdue, color: "#dc2626" },
   ]), [totalPaid, totalPending, totalOverdue, countPaid, countPending, countOverdue]);
 
-  if (loading) {
-    return <div className="p-6 text-center">Carregando...</div>;
-  }
+  if (loading) return <div className="p-6 text-center">Carregando...</div>;
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">💰 Controle Financeiro</h1>
+    <div className="p-6 space-y-6 min-h-screen bg-gray-50">
+      {/* 🔹 Cabeçalho com botão de voltar */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">💰 Controle Financeiro</h1>
+        <Link href="/admin/dashboard" className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition">
+          ← Voltar ao Dashboard
+        </Link>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <KpiCard title="Total Pago" value={BRL.format(totalPaid)} subtitle={`${countPaid} pagamentos`} tone="success" />
@@ -104,7 +88,6 @@ export default function FinancePage() {
         <KpiCard title="Vencido" value={BRL.format(totalOverdue)} subtitle={`${countOverdue} pagamentos`} tone="danger" />
       </div>
 
-      {/* ✅ Renderiza gráficos só depois de montar (evita erro no SSR) */}
       {mounted && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-2xl shadow p-4 h-[360px]">
@@ -121,91 +104,8 @@ export default function FinancePage() {
               </PieChart>
             </ResponsiveContainer>
           </div>
-
-          <div className="bg-white rounded-2xl shadow p-4 h-[360px]">
-            <h2 className="font-semibold mb-2">Receita por Mês</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="monthLabel" />
-                <YAxis tickFormatter={(v: number | string) => BRL.format(Number(v)).replace("R$", "")} />
-                <Tooltip formatter={(value) => BRL.format(Number(value))} />
-                <Legend />
-                <Bar dataKey="paid" name="Pago" fill="#16a34a" />
-                <Bar dataKey="pending" name="Pendente" fill="#facc15" />
-                <Bar dataKey="overdue" name="Vencido" fill="#dc2626" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
         </div>
       )}
-
-      <div className="bg-white rounded-2xl shadow overflow-hidden">
-        <div className="p-4 border-b flex items-center justify-between">
-          <h2 className="font-semibold">Pagamentos</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead>
-              <tr className="bg-gray-50 text-left">
-                <th className="p-3">Membro</th>
-                <th className="p-3">Mês/Ano</th>
-                <th className="p-3">Valor</th>
-                <th className="p-3">Status</th>
-                <th className="p-3 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payments.map((p) => (
-                <tr key={p.id} className="border-t">
-                  <td className="p-3">{p.member?.name ?? `#${p.memberId}`}</td>
-                  <td className="p-3">{String(p.month).padStart(2, "0")}/{p.year}</td>
-                  <td className="p-3">{BRL.format(p.amount)}</td>
-                  <td className="p-3">
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm ${
-                        p.status === "PAID"
-                          ? "bg-green-100 text-green-700"
-                          : p.status === "OVERDUE"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-yellow-100 text-yellow-700"
-                      }`}
-                    >
-                      {p.status}
-                    </span>
-                  </td>
-                  <td className="p-3 text-right space-x-2">
-                    {p.status !== "PAID" && (
-                      <button
-                        onClick={() => updateStatus(p.id, "PAID")}
-                        className="bg-green-600 text-white px-3 py-1 rounded-lg hover:opacity-90"
-                      >
-                        Marcar Pago
-                      </button>
-                    )}
-                    {p.status !== "OVERDUE" && (
-                      <button
-                        onClick={() => updateStatus(p.id, "OVERDUE")}
-                        className="bg-red-600 text-white px-3 py-1 rounded-lg hover:opacity-90"
-                      >
-                        Vencido
-                      </button>
-                    )}
-                    {p.status !== "PENDING" && (
-                      <button
-                        onClick={() => updateStatus(p.id, "PENDING")}
-                        className="bg-yellow-500 text-white px-3 py-1 rounded-lg hover:opacity-90"
-                      >
-                        Pendente
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   );
 }
@@ -219,7 +119,7 @@ function KpiCard({ title, value, subtitle, tone = "neutral" }: { title: string; 
   } as const;
 
   return (
-    <div className={`rounded-2xl border ${toneClasses[tone]} p-4 shadow-sm`}> 
+    <div className={`rounded-2xl border ${toneClasses[tone]} p-4 shadow-sm`}>
       <div className="text-sm opacity-80">{title}</div>
       <div className="text-2xl font-semibold">{value}</div>
       {subtitle && <div className="text-xs opacity-70 mt-1">{subtitle}</div>}

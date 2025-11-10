@@ -11,23 +11,28 @@ export function middleware(req: NextRequest) {
   const isProtected = pathname.startsWith("/admin");
   const isLogin = pathname === "/login";
 
+  // 🔒 Bloqueia acesso a /admin se não tiver token
   if (isProtected && !token) {
+    console.log("🚫 Sem login — redirecionando para /login");
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
+  // 🔑 Se tem token, validamos
   if (token) {
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
 
-      // 🔒 Já logado → evita reentrar no /login
+      // 🚪 Evita acesso ao /login se já estiver logado
       if (isLogin) {
-        return NextResponse.redirect(
-          new URL(decoded.role === "ADMIN" ? "/admin/dashboard" : "/dashboard", req.url)
-        );
+        const redirectTo =
+          decoded.role === "ADMIN" ? "/admin/dashboard" : "/dashboard";
+        console.log("✅ Já logado — redirecionando para", redirectTo);
+        return NextResponse.redirect(new URL(redirectTo, req.url));
       }
 
-      // 🔐 Bloqueia acesso admin se role for USER
+      // 🔐 Bloqueia /admin se o usuário não for ADMIN
       if (isProtected && decoded.role !== "ADMIN") {
+        console.log("🚫 Usuário comum tentando acessar área admin");
         return NextResponse.redirect(new URL("/dashboard", req.url));
       }
 
@@ -40,9 +45,11 @@ export function middleware(req: NextRequest) {
     }
   }
 
+  // ✅ Continua normalmente se rota pública
   return NextResponse.next();
 }
 
+// ⚙️ Define onde o middleware roda
 export const config = {
   matcher: ["/admin/:path*", "/login", "/dashboard/:path*"],
 };

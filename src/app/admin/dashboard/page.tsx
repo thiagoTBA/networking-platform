@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link"; // 🆕 Adicionado para navegação interna
 
 // 💡 Componente simples para os "cards" de estatísticas
 function StatCard({
@@ -13,7 +14,7 @@ function StatCard({
   icon: string;
 }) {
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm flex items-center space-x-4">
+    <div className="bg-white p-6 rounded-xl shadow-sm flex items-center space-x-4 hover:shadow-md transition">
       <div className="bg-blue-100 p-3 rounded-full">
         <span className="text-2xl">{icon}</span>
       </div>
@@ -25,7 +26,6 @@ function StatCard({
   );
 }
 
-// 💡 Tipagem opcional pro retorno da API
 interface DashboardStats {
   activeMembers: number;
   referralsThisMonth: number;
@@ -43,7 +43,6 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Carrega dados do usuário logado
   useEffect(() => {
     async function fetchUser() {
       try {
@@ -59,7 +58,6 @@ export default function DashboardPage() {
     fetchUser();
   }, []);
 
-  // ✅ Carrega métricas do dashboard
   useEffect(() => {
     fetch("/api/dashboard")
       .then((res) => res.json())
@@ -81,7 +79,6 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // ✅ Logout
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     window.location.href = "/login";
@@ -94,16 +91,12 @@ export default function DashboardPage() {
     return <div className="p-8 text-red-600">Erro ao carregar métricas.</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* 🔹 Cabeçalho com nome do usuário e botão de logout */}
+    <div className="min-h-screen bg-gray-50 p-6 space-y-8">
+      {/* 🔹 Cabeçalho */}
       <header className="flex items-center justify-between mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            Dashboard de Performance
-          </h1>
-          <p className="text-gray-600">
-            Resumo de desempenho do grupo este mês.
-          </p>
+          <h1 className="text-2xl font-bold text-gray-800">Dashboard de Performance</h1>
+          <p className="text-gray-600">Resumo de desempenho do grupo este mês.</p>
         </div>
 
         <div className="flex items-center gap-4">
@@ -114,7 +107,6 @@ export default function DashboardPage() {
                 <p className="text-sm text-gray-500">{user.email}</p>
                 <p className="text-xs text-gray-400 uppercase">{user.role}</p>
               </div>
-
               <button
                 onClick={handleLogout}
                 className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition text-sm"
@@ -128,23 +120,22 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Grid com os 3 indicadores */}
+      {/* 🔹 Indicadores */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard
-          title="Membros Ativos"
-          value={(stats?.activeMembers ?? 0).toString()}
-          icon="👥"
-        />
-        <StatCard
-          title="Indicações no Mês"
-          value={(stats?.referralsThisMonth ?? 0).toString()}
-          icon="🚀"
-        />
-        <StatCard
-          title="Total de 'Obrigados' no Mês"
-          value={(stats?.thanksThisMonth ?? 0).toString()}
-          icon="❤️"
-        />
+        <StatCard title="Membros Ativos" value={(stats?.activeMembers ?? 0).toString()} icon="👥" />
+        <StatCard title="Indicações no Mês" value={(stats?.referralsThisMonth ?? 0).toString()} icon="🚀" />
+        <StatCard title="Total de 'Obrigados' no Mês" value={(stats?.thanksThisMonth ?? 0).toString()} icon="❤️" />
+      </div>
+
+      {/* 🔹 Navegação simples */}
+      <div className="flex justify-center gap-4 pt-4">
+        <Link href="/admin/finance" className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+          Ir para Financeiro 💰
+        </Link>
+
+        <Link href="/admin/meetings" className="px-5 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition">
+          Ver Reuniões 📅
+        </Link>
       </div>
     </div>
   );

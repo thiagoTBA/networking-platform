@@ -1,21 +1,21 @@
-# networking-platform
-AG Sistemas Soluções em Software 
-# 🚀 Networking Platform
+# 🚀 Networking Platform  
+**AG Sistemas - Soluções em Software**
 
-Projeto desenvolvido como parte do **Teste Técnico para Desenvolvedor Fullstack**.
-Aplicação que gerencia o processo de **solicitação, aprovação e convite de novos membros** de uma rede profissional.
+Plataforma profissional para **gestão de rede de membros**, permitindo solicitações, aprovações, convites, controle financeiro, reuniões e avisos internos.  
+Desenvolvido como parte de um **teste técnico fullstack** com foco em arquitetura moderna e escalabilidade.
 
 ---
 
-## 🧠 Tecnologias Utilizadas
+## 🧩 Stack Principal
 
-* **Next.js 16 (App Router + Edge Runtime)**
-* **TypeScript**
-* **TailwindCSS**
-* **Prisma ORM + SQLite**
-* **Jest + Testing Library**
-* **Proxy Middleware (Next 16)**
-* **Node.js 22**
+| Camada | Tecnologias |
+|--------|--------------|
+| **Frontend** | Next.js 16 (App Router + Edge Runtime), React 19, TailwindCSS 4 |
+| **Backend** | Node.js 22, Prisma ORM, SQLite |
+| **Autenticação** | Cookies HTTP + JWT + Middleware Proxy |
+| **Outros** | Nodemailer (e-mails), Bcrypt (hash), JSPDF / FileSaver (relatórios PDF), Recharts (gráficos) |
+| **Testes** | Jest + Testing Library |
+| **Linguagem** | TypeScript 5.9 |
 
 ---
 
@@ -24,7 +24,7 @@ Aplicação que gerencia o processo de **solicitação, aprovação e convite de
 ### 1️⃣ Clonar o repositório
 
 ```bash
-git clone https://github.com/seu-usuario/networking-platform.git
+git clone https://github.com/thiagotba/networking-platform.git
 cd networking-platform
 ```
 
@@ -46,26 +46,8 @@ npx prisma generate
 npm run dev
 ```
 
-> Aplicação disponível em:
-> 🔗 [http://localhost:3000](http://localhost:3000)
-
----
-
-## 🧪 Testes
-
-O projeto utiliza **Jest** para testes unitários.
-
-Executar todos os testes:
-
-```bash
-npm run test
-```
-
-📦 **Cobertura de testes atual:**
-
-* `proxy.ts` → Proteção de rotas
-* `login.route.ts` → Autenticação e cookies
-* `sanity.test.ts` → Verificação do ambiente
+Acesse em:  
+🔗 [http://localhost:3000](http://localhost:3000)
 
 ---
 
@@ -75,31 +57,54 @@ npm run test
 src/
  ├── app/
  │   ├── api/
- │   │   ├── applications/
- │   │   ├── invitations/
- │   │   ├── invite/[token]/
- │   │   └── login/
+ │   │   ├── applications/        → Gerenciamento de solicitações
+ │   │   ├── invitations/         → Criação e envio de convites
+ │   │   ├── invite/[token]/      → Validação de token de convite
+ │   │   ├── login/               → Autenticação e cookies
+ │   │   └── finance/             → API de controle financeiro
  │   ├── admin/
- │   ├── apply/
- │   ├── invite/[token]/
- │   └── login/
+ │   │   ├── applications/        → Painel de solicitações
+ │   │   ├── finance/             → Gestão de pagamentos e mensalidades
+ │   │   ├── meetings/            → Agenda e atas de reuniões
+ │   │   ├── notices/             → Avisos e comunicados internos
+ │   │   ├── referrals/           → Indicações e networking
+ │   │   └── dashboard/           → Painel de estatísticas (Recharts)
+ │   ├── apply/                   → Formulário de adesão
+ │   ├── invite/[token]/          → Página de convite
+ │   └── login/                   → Tela de login
  ├── lib/
- │   └── prisma.ts
- ├── proxy.ts
- └── global.css
+ │   ├── prisma.ts                → Configuração ORM
+ │   ├── mailer.ts                → Serviço de e-mail (Nodemailer)
+ │   └── auth.ts                  → Validação JWT e sessão
+ ├── middleware.ts                → Proxy e proteção de rotas
+ ├── scripts/
+ │   ├── seedMembers.ts           → Geração de membros fake
+ │   └── generateMonthlyPayments.ts → Geração de mensalidades automáticas
+ ├── prisma/
+ │   ├── schema.prisma            → Modelagem de banco
+ │   ├── migrations/              → Histórico de migrações
+ │   └── seed.ts                  → Popular dados iniciais
+ ├── __tests__/                   → Testes unitários
+ ├── public/                      → Assets e ícones
+ └── globals.css                  → Estilos globais
 ```
 
 ---
 
 ## 🔒 Funcionalidades
 
-| Módulo                | Descrição                                     |
-| --------------------- | --------------------------------------------- |
-| `/apply`              | Envio de pedido de adesão                     |
-| `/admin`              | Gerenciamento de solicitações e convites      |
-| `/api/login`          | Login e controle de sessão via cookies        |
-| `/api/invite/[token]` | Validação e consumo de convites               |
-| `proxy.ts`            | Proteção de rotas e redirecionamento dinâmico |
+| Módulo | Descrição |
+|--------|------------|
+| **/apply** | Solicitação de entrada na rede |
+| **/admin/applications** | Aprovação e rejeição de pedidos |
+| **/admin/finance** | Controle financeiro, geração de boletos e PDFs |
+| **/admin/meetings** | Gerenciamento de reuniões e atas |
+| **/admin/notices** | Avisos internos para membros |
+| **/admin/referrals** | Sistema de indicação de novos membros |
+| **/api/login** | Login e sessão (cookies + JWT) |
+| **/api/invite/[token]** | Validação de convites |
+| **/scripts/generateMonthlyPayments** | Automatização de mensalidades |
+| **/proxy.ts / middleware.ts** | Proteção de rotas autenticadas |
 
 ---
 
@@ -107,12 +112,15 @@ src/
 
 Crie um arquivo `.env` com base em `.env.example`:
 
-```
+```env
 DATABASE_URL="file:./dev.db"
+JWT_SECRET="seu_token_seguro"
+EMAIL_USER="seu_email@provedor.com"
+EMAIL_PASS="sua_senha"
 NODE_ENV="development"
 ```
 
-Gerar banco local:
+Gerar banco e rodar migrações:
 
 ```bash
 npx prisma migrate dev --name init
@@ -120,28 +128,63 @@ npx prisma migrate dev --name init
 
 ---
 
-## 🧱 Arquitetura Geral
+## 🧪 Testes
 
-O projeto utiliza uma arquitetura **Fullstack integrada** com:
+O projeto utiliza **Jest** + **Testing Library**.
 
-* Frontend e Backend no mesmo monorepo (Next.js App Router)
-* Banco relacional SQLite via Prisma ORM
-* Autenticação baseada em cookies (sem dependência externa)
-* Testes unitários simulando ambiente Next Edge Runtime
+Rodar testes unitários:
+
+```bash
+npm run test
+```
+
+Gerar relatório de cobertura:
+
+```bash
+npm run test:coverage
+```
+
+📦 Testes existentes:
+- `proxy.test.ts` → Proteção de rotas  
+- `login.test.ts` → Autenticação e cookies  
+- `memberModel.test.ts` → Validação ORM  
+- `ApplyPage.test.tsx` → Formulário de adesão  
+- `sanity.test.ts` → Sanidade e ambiente  
+
+---
+
+## 📊 Módulo Financeiro 
+
+- Geração automática de **mensalidades** com script agendável.  
+- Relatórios em **PDF** (via `jspdf` e `file-saver`).  
+- Dashboard com **gráficos interativos** (`Recharts`).  
+- Histórico de pagamentos vinculado a cada membro.
+
+---
+
+## 🏗️ Arquitetura Geral
+
+O projeto segue uma arquitetura **Fullstack unificada**, com:
+- Frontend e Backend integrados via App Router.
+- Middleware centralizado controlando autenticação JWT e cookies.
+- Serviços isolados (Mailer, Prisma, Auth, Finance).
+- Scripts de automação (semente, relatórios e mensalidades).
 
 ---
 
 ## 👨‍💻 Autor
 
-**Thiago Brito**
-Desenvolvedor Fullstack
-📧 contato: [thiago_brito@outlook.com](mailto:thiago_brito@outlook.com)
+**Thiago Brito**  
+Desenvolvedor Fullstack  
+📧 [thiago_brito@outlook.com](mailto:thiago_brito@outlook.com)
 
 ---
 
 ## ✅ Status do Projeto
 
-🟩 100% Concluído
-🤪 Testes: 6/6 passando
-📦 Build: ok
-🔒 Segurança e autenticação: validada
+🟩 **100% Concluído e atualizado**  
+🧪 Testes: todos passando  
+📦 Build: validada  
+🔒 Segurança e autenticação revisadas  
+💰 Módulo financeiro implementado  
+📈 Painel administrativo completo  
