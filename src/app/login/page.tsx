@@ -16,24 +16,24 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // 👈 importante pro cookie JWT funcionar
+        credentials: "include", // importante pro cookie JWT funcionar
         body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Falha ao fazer login");
+        throw new Error(data.error || "E-mail ou senha incorretos");
       }
 
-      // 🔄 Atualiza cache e aplica redirecionamento dinâmico
+      // Atualiza cache e aplica redirecionamento dinâmico
       router.refresh();
 
-      // 💡 Aqui está o ajuste: redireciona com base no papel do usuário
-      if (data.user.role === "ADMIN") {
+      // Redireciona conforme o papel do usuário
+      if (data.user?.role === "ADMIN") {
         router.push("/admin/dashboard");
       } else {
         router.push("/dashboard");
@@ -41,7 +41,7 @@ export default function LoginPage() {
 
     } catch (err: any) {
       console.error("Erro no login:", err);
-      setError(err.message || "Erro inesperado");
+      setError(err.message || "Erro inesperado. Tente novamente.");
     } finally {
       setLoading(false);
     }
