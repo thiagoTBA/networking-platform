@@ -28,14 +28,19 @@ export async function POST(req: Request) {
       return response;
     }
 
-    return NextResponse.json({ error: "Credenciais inválidas" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Credenciais inválidas" },
+      { status: 401 }
+    );
   } catch (error) {
     console.error("Erro no login:", error);
-    return NextResponse.json({ error: "Erro interno no login" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro interno no login" },
+      { status: 500 }
+    );
   }
 }
 
-// ✅ DELETE → logout
 export async function DELETE() {
   const response = NextResponse.json({ success: true });
   response.cookies.delete("auth_token");
