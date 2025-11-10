@@ -4,41 +4,47 @@ import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "segredo_super_seguro";
 
-export function middleware(request: NextRequest) {
-  const token = request.cookies.get("auth_token")?.value;
-  const { pathname } = request.nextUrl;
+export function middleware(req: NextRequest) {
+  const token = req.cookies.get("auth_token")?.value;
+  const { pathname } = req.nextUrl;
 
-  // 🔒 Verifica se a rota é protegida (/admin)
   const isProtected = pathname.startsWith("/admin");
-  const isLogin = pathname.startsWith("/login");
+  const isLogin = pathname === "/login";
 
-  // 🚪 Se está tentando acessar rota privada sem token → redireciona
   if (isProtected && !token) {
-    const loginUrl = new URL("/login", request.url);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // ✅ Se o token existe, valida o JWT
   if (token) {
     try {
-      jwt.verify(token, JWT_SECRET);
-    } catch {
-      // Token inválido → apaga cookie e redireciona
-      const response = NextResponse.redirect(new URL("/login", request.url));
-      response.cookies.delete("auth_token");
-      return response;
-    }
-  }
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
 
-  // 🔁 Se já logado e tentando ir pro login → redireciona pro admin
-  if (token && isLogin) {
-    const adminUrl = new URL("/admin", request.url);
-    return NextResponse.redirect(adminUrl);
+      // 🔒 Já logado → evita reentrar no /login
+      if (isLogin) {
+        return NextResponse.redirect(
+          new URL(decoded.role === "ADMIN" ? "/admin/dashboard" : "/dashboard", req.url)
+        );
+      }
+
+      // 🔐 Bloqueia acesso admin se role for USER
+      if (isProtected && decoded.role !== "ADMIN") {
+        return NextResponse.redirect(new URL("/dashboard", req.url));
+      }
+
+      return NextResponse.next();
+    } catch (error) {
+      console.error("Token inválido:", error);
+      const res = NextResponse.redirect(new URL("/login", req.url));
+      res.cookies.delete("auth_token");
+      return res;
+    }
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/login"],
+  matcher: ["/admin/:path*", "/login", "/dashboard/:path*"],
 };
+
+export const runtime = "nodejs";

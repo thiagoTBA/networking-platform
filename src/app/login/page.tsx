@@ -4,29 +4,46 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
+    setError("");
+    setLoading(true);
 
-    const USER = "admin";
-    const PASS = "1234";
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include", // 👈 importante pro cookie JWT funcionar
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (username === USER && password === PASS) {
-      try {
-        // 🔹 Cria o cookie diretamente no navegador
-        document.cookie = "auth_token=true; path=/; SameSite=Lax;";
+      const data = await res.json();
 
-        // ✅ Redireciona pro painel admin
-        router.push("/admin");
-      } catch {
-        setError("Erro ao criar sessão. Tente novamente.");
+      if (!res.ok) {
+        throw new Error(data.error || "Falha ao fazer login");
       }
-    } else {
-      setError("Usuário ou senha incorretos");
+
+      // 🔄 Atualiza cache e aplica redirecionamento dinâmico
+      router.refresh();
+
+      // 💡 Aqui está o ajuste: redireciona com base no papel do usuário
+      if (data.user.role === "ADMIN") {
+        router.push("/admin/dashboard");
+      } else {
+        router.push("/dashboard");
+      }
+
+    } catch (err: any) {
+      console.error("Erro no login:", err);
+      setError(err.message || "Erro inesperado");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -39,14 +56,15 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="text-white font-medium block mb-1">Usuário</label>
+            <label className="text-white font-medium block mb-1">E-mail</label>
             <input
-              type="text"
+              type="email"
               className="w-full px-3 py-2 rounded-md border border-white/30 bg-white/10 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50 transition"
-              placeholder="Digite seu usuário"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Digite seu e-mail"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="email"
             />
           </div>
 
@@ -59,6 +77,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
             />
           </div>
 
@@ -68,9 +87,10 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full bg-white text-blue-700 font-semibold py-2 rounded-md hover:bg-gray-100 transition-all shadow-md"
+            disabled={loading}
+            className="w-full bg-white text-blue-700 font-semibold py-2 rounded-md hover:bg-gray-100 transition-all shadow-md disabled:opacity-70"
           >
-            Entrar
+            {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
 

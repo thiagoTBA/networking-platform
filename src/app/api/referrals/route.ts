@@ -1,39 +1,32 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// ✅ GET — lista todas as indicações
-export async function GET() {
-  const referrals = await prisma.referral.findMany({
-    include: {
-      fromMember: { select: { id: true, name: true, email: true } },
-      toMember: { select: { id: true, name: true, email: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+// ✅ GET — lista todas as indicações, com suporte a filtros opcionais
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const status = searchParams.get("status");
+  const fromMemberId = searchParams.get("fromMemberId");
+  const toMemberId = searchParams.get("toMemberId");
 
-  return NextResponse.json(referrals);
-}
-
-// ✅ POST — cria uma nova indicação
-export async function POST(req: Request) {
   try {
-    const { fromMemberId, toMemberId, description } = await req.json();
+    const filters: any = {};
 
-    if (!fromMemberId || !toMemberId) {
-      return NextResponse.json({ error: "IDs obrigatórios não informados" }, { status: 400 });
-    }
+    if (status) filters.status = status;
+    if (fromMemberId) filters.fromMemberId = parseInt(fromMemberId);
+    if (toMemberId) filters.toMemberId = parseInt(toMemberId);
 
-    const referral = await prisma.referral.create({
-      data: {
-        fromMemberId,
-        toMemberId,
-        description,
+    const referrals = await prisma.referral.findMany({
+      where: filters,
+      include: {
+        fromMember: { select: { id: true, name: true, email: true } },
+        toMember: { select: { id: true, name: true, email: true } },
       },
+      orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(referral, { status: 201 });
+    return NextResponse.json(referrals);
   } catch (error) {
-    console.error("Erro ao criar referral:", error);
-    return NextResponse.json({ error: "Erro interno ao criar referral" }, { status: 500 });
+    console.error("❌ Erro ao buscar referrals:", error);
+    return NextResponse.json({ error: "Erro ao listar indicações" }, { status: 500 });
   }
 }

@@ -1,51 +1,69 @@
 import { NextResponse } from "next/server";
+import jwt from "jsonwebtoken";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken"; // npm install jsonwebtoken
 
-const JWT_SECRET = process.env.JWT_SECRET || "segredo_super_seguro"; // ⚠️ define isso no .env
+const JWT_SECRET = process.env.JWT_SECRET || "segredo_super_seguro";
 
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
 
     if (!email || !password) {
-      return NextResponse.json({ error: "E-mail e senha são obrigatórios" }, { status: 400 });
+      return NextResponse.json(
+        { error: "E-mail e senha são obrigatórios" },
+        { status: 400 }
+      );
     }
 
-    const member = await prisma.member.findUnique({ where: { email } });
-    if (!member) return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
+    // 🔎 Busca o membro
+    const member = await prisma.member.findUnique({
+      where: { email },
+    });
 
-    const valid = await bcrypt.compare(password, member.password);
-    if (!valid) return NextResponse.json({ error: "Senha incorreta" }, { status: 401 });
+    if (!member) {
+      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
+    }
 
-    // 🪄 Gera o token JWT
+    // 🔑 Confere senha (bcrypt ou texto simples)
+    const validPassword = member.password.startsWith("$2b$")
+      ? await bcrypt.compare(password, member.password)
+      : password === member.password;
+
+    if (!validPassword) {
+      return NextResponse.json({ error: "Senha incorreta" }, { status: 401 });
+    }
+
+    // 🧩 Cria token JWT incluindo ROLE
     const token = jwt.sign(
       {
         id: member.id,
         email: member.email,
         name: member.name,
+        role: member.role, // 👈 ESSENCIAL: adiciona role no token
       },
       JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "4h" }
     );
 
-    // 🍪 Salva o token em um cookie HttpOnly
-    const response = NextResponse.json({
+    // 🍪 Envia cookie
+    const res = NextResponse.json({
       success: true,
       message: "Login realizado com sucesso!",
+      user: { id: member.id, name: member.name, email: member.email, role: member.role },
     });
 
-    response.cookies.set("auth_token", token, {
+    res.cookies.set("auth_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
       path: "/",
-      maxAge: 7 * 24 * 60 * 60, // 7 dias
+      maxAge: 60 * 60 * 4, // 4 horas
     });
 
-    return response;
+    return res;
   } catch (error) {
-    console.error("❌ Erro no login:", error);
+    console.error("Erro no login:", error);
     return NextResponse.json({ error: "Erro interno no login" }, { status: 500 });
   }
 }

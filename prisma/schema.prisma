@@ -8,56 +8,53 @@ datasource db {
 }
 
 model Application {
-  id         Int          @id @default(autoincrement())
-  name       String
-  email      String
-  company    String?
-  reason     String?
-  status     String       @default("pending")
-  createdAt  DateTime     @default(now())
-
-  // Relação inversa para Invitation
+  id          Int          @id @default(autoincrement())
+  name        String
+  email       String
+  company     String?
+  status      String       @default("PENDING")
+  createdAt   DateTime     @default(now())
+  reason      String?
   invitations Invitation[]
 }
 
 model Invitation {
-  id           Int          @id @default(autoincrement())
-  email        String
-  token        String       @unique
-  used         Boolean      @default(false)
-  expires      DateTime     @default(now())
-  createdAt    DateTime     @default(now())
-
-  // Relação com Application
-  applicationId Int          @default(1)
-  application   Application  @relation(fields: [applicationId], references: [id])
+  id            Int         @id @default(autoincrement())
+  email         String
+  token         String      @unique
+  used          Boolean     @default(false)
+  expires       DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+  applicationId Int
+  application   Application @relation(fields: [applicationId], references: [id])
 }
 
 model Member {
-  id         Int         @id @default(autoincrement())
-  name       String
-  email      String      @unique
-  company    String?
-  joinedAt   DateTime    @default(now())
-  password   String
-
-  ReferralsSent     Referral[] @relation("ReferralsSent")
-  ReferralsReceived Referral[] @relation("ReferralsReceived")
-
-  // 👇 Novo: relação inversa com avisos criados
-  notices   Notice[]           @relation("MemberNotices")
+  id                Int          @id @default(autoincrement())
+  name              String
+  email             String       @unique
+  company           String?
+  joinedAt          DateTime     @default(now())
+  password          String
+  role              String       @default("USER")
+  attendances       Attendance[]
+  notices           Notice[]     @relation("MemberNotices")
+  ReferralsReceived Referral[]   @relation("ReferralsReceived")
+  ReferralsSent     Referral[]   @relation("ReferralsSent")
+  payments          Payment[] // <-- ✅ adiciona esta linha
 }
 
 model Referral {
-  id            Int       @id @default(autoincrement())
-  fromMemberId  Int
-  toMemberId    Int
-  description   String?
-  status        String    @default("pending")
-  createdAt     DateTime  @default(now())
-
-  fromMember Member @relation("ReferralsSent", fields: [fromMemberId], references: [id])
-  toMember   Member @relation("ReferralsReceived", fields: [toMemberId], references: [id])
+  id               Int       @id @default(autoincrement())
+  fromMemberId     Int
+  toMemberId       Int
+  description      String?
+  status           String    @default("ENVIADA")
+  gratitudeMessage String?
+  closedAt         DateTime?
+  createdAt        DateTime  @default(now())
+  toMember         Member    @relation("ReferralsReceived", fields: [toMemberId], references: [id])
+  fromMember       Member    @relation("ReferralsSent", fields: [fromMemberId], references: [id])
 }
 
 model Notice {
@@ -69,3 +66,41 @@ model Notice {
   author    Member   @relation("MemberNotices", fields: [authorId], references: [id])
 }
 
+model Meeting {
+  id          Int          @id @default(autoincrement())
+  title       String
+  description String?
+  date        DateTime
+  location    String?
+  createdAt   DateTime     @default(now())
+  attendances Attendance[]
+}
+
+model Attendance {
+  id        Int      @id @default(autoincrement())
+  memberId  Int
+  meetingId Int
+  attended  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  meeting   Meeting  @relation(fields: [meetingId], references: [id])
+  member    Member   @relation(fields: [memberId], references: [id])
+}
+
+model Payment {
+  id        Int           @id @default(autoincrement())
+  memberId  Int
+  month     String
+  year      Int
+  amount    Float
+  status    PaymentStatus @default(PENDING)
+  paidAt    DateTime?
+  createdAt DateTime      @default(now())
+
+  member Member @relation(fields: [memberId], references: [id])
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
