@@ -1,6 +1,6 @@
 const nextConfig = {
   experimental: {
-    turbo: false,
+    //turbo: false,
   },
 };
 
